@@ -64,6 +64,34 @@ def aggiungi_dati():
         if 'conn' in locals() and conn.is_connected():
             cursor.close()
             conn.close()
+@app.route('/dati/elimina/<int:id>', methods=['DELETE'])
+def elimina_dati(id):
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
 
+        query = "DELETE FROM Verdure WHERE id = %s"
+        cursor.execute(query, (id,))
+
+
+        if cursor.rowcount == 0:
+            return jsonify({"errore": f"Nessun record trovato con id {id}"}), 404
+
+        conn.commit()
+
+        return jsonify({"messaggio": f"Record con id {id} eliminato con successo"}), 200
+    
+    except Error as e:
+        print("Errore nella connessione al database:", e)
+        return jsonify({"errore": "Impossibile connettersi al database"}), 500
+    
+    except Exception as e:
+        print("Errore generico:", e)
+        return jsonify({"errore": "Si è verificato un errore"}), 500
+    
+    finally:
+        if 'conn' in locals() and conn.is_connected():
+            cursor.close()
+            conn.close()
 if __name__ == '__main__':
  app.run()
