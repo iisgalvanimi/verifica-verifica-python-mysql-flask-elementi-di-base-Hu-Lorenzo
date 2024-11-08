@@ -93,5 +93,56 @@ def elimina_dati(id):
         if 'conn' in locals() and conn.is_connected():
             cursor.close()
             conn.close()
+@app.route('/dati/aggiorna/<int:id>', methods=['PUT'])
+def aggiorna_dati(id):
+    try:
+        dati = request.get_json()
+        if not dati or not any(k in dati for k in ['Nome', 'Colore', 'Parte_edibile', 'Stagione', 'Calorie']):
+            return jsonify({"errore": "Dati incompleti"}), 400
+        nome = dati.get('Nome')
+        colore = dati.get('Colore')
+        parte_edibile = dati.get('Parte_edibile')
+        stagione = dati.get('Stagione')
+        calorie = dati.get('Calorie')
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        query = "UPDATE Verdure SET"
+        updates = []
+
+        if nome:
+            updates.append(" Nome = %s")
+        if colore:
+            updates.append(" Colore = %s")
+        if parte_edibile:
+            updates.append(" Parte_edibile = %s")
+        if stagione:
+            updates.append(" Stagione = %s")
+        if calorie:
+            updates.append(" Calorie = %s")
+
+        if not updates:
+            return jsonify({"errore": "Nessun campo da aggiornare"}), 400
+
+        query += ",".join(updates) + " WHERE id = %s"
+        params = tuple(valore for valore in [nome, colore, parte_edibile, stagione, calorie] if valore is not None) + (id,)
+
+        cursor.execute(query, params)
+
+        conn.commit()
+
+        return jsonify({"messaggio": f"Dati aggiornati per id {id} con successo"}), 200
+    
+    except Error as e:
+        print("Errore nella connessione al database:", e)
+        return jsonify({"errore": f"Errore nel database: {str(e)}"}), 500
+    
+    except Exception as e:
+        print("Errore generico:", e)
+        return jsonify({"errore": f"Si è verificato un errore: {str(e)}"}), 500
+    
+    finally:
+        if 'conn' in locals() and conn.is_connected():
+            cursor.close()
+            conn.close()
 if __name__ == '__main__':
  app.run()
